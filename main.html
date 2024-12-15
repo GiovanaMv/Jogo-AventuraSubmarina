@@ -2,44 +2,62 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Jogo - Submarino</title>
     <style>
         canvas {
             display: block;
             margin: 0 auto;
-            background: url('cena1.png') repeat-x; /* Fundo se repetindo */
-            width: 100vw;  /* Largura 100% da tela */
-            height: 100vh; /* Altura 100% da tela */
+            position: fixed;
+            background: url('cena1.png') repeat-x;
+            width: 100vw;
+            height: 100vh;
         }
-        body {
-            margin: 0;
+
+        html, body {
             overflow: hidden;
+            height: 100%;
+            margin: 0;
+            padding: 0;
         }
+        @media screen and (orientation: landscape) {
+    canvas {
+        width: 100vw; /* Garante que o canvas preencha toda a largura */
+        height: 100vh; /* Garante que o canvas preencha toda a altura */
+    }
+    html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Evita rolagem */
+    }
+}
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Definir a largura e altura do canvas para 100% da tela
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+    // Definir a largura e altura do canvas para 100% da tela
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-window.addEventListener('resize', () => {
+    window.addEventListener('resize', () => {
     // Quando a janela for redimensionada, atualizar as dimensões do canvas
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Detectar dispositivo móvel
 const isMobile = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Windows Phone/i.test(navigator.userAgent);
 
 // Configurar a cena com base no dispositivo
 const bgImg = new Image();
 bgImg.src = isMobile ? 'cena1.png' : 'cena44.png'; // Cena diferente para dispositivos móveis
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 const submarineImg = new Image();
 submarineImg.src = 'submarine.png';
 
@@ -55,15 +73,13 @@ const obstacleImages = [
     img.src = src;
     return img;
 });
-
-    
-        submarineImg.onload = () => {
-            gameLoop();
-        };
-    
+    submarineImg.onload = () => {
+    gameLoop();
+};
+///////////////////////////////////////////////////////////////////////////////////////////
         const submarine = { /// tamanho do submarino
-            x: 150,
-            y: 300,
+            x: isMobile ? 50 : 150,  // Mais à esquerda no smartphone
+            y: isMobile ? -90 : 300, // Surgindo de cima no smartphone
             width: 90,
             height: 90,
             vy: 0,
@@ -74,8 +90,87 @@ const obstacleImages = [
         let lives = 3;
         let bgX = 0;
         let isGameOver = false;
+////////////////////////////////////////////////////////////////////////////////////////////////////
+        function checkOrientation() {
+  if (window.innerWidth < window.innerHeight) {
+    // Exibe mensagem para girar o celular
+    document.getElementById('orientation-warning').style.display = 'block';
+  } else {
+    // Oculta a mensagem quando em paisagem
+    document.getElementById('orientation-warning').style.display = 'none';
+  }
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Previne rolagem de teclas (se for usado em navegador)
+window.addEventListener('keydown', function(event) {
+  if (['ArrowUp', 'ArrowDown', ' '].includes(event.key)) {
+    event.preventDefault();
+  }
+  // Previne a rolagem por gesto de toque
+document.addEventListener('touchmove', function(event) {
+  event.preventDefault();
+}, { passive: false });
 
-    
+// Previne o zoom com gesto de pinça
+document.addEventListener('gesturestart', function(event) {
+  event.preventDefault();
+  event.stopPropagation();
+}, { passive: false });
+});
+// Bloqueia gestos de rolagem
+document.body.addEventListener(
+    'touchstart',
+    (e) => e.preventDefault(),
+    { passive: false }
+);
+
+document.body.addEventListener(
+    'touchmove',
+    (e) => e.preventDefault(),
+    { passive: false }
+);
+
+// Bloqueia rotação involuntária
+window.addEventListener('orientationchange', () => {
+    checkOrientation();
+});
+
+// Reforça a restrição de zoom
+document.addEventListener(
+    'gesturechange',
+    (e) => e.preventDefault(),
+    { passive: false }
+);
+
+// Bloqueia atalhos do teclado que causam rolagem (caso de navegadores desktop)
+window.addEventListener('keydown', (e) => {
+    if (['ArrowUp', 'ArrowDown', 'Space', 'PageUp', 'PageDown'].includes(e.key)) {
+        e.preventDefault();
+    }
+    function adjustCanvasOnOrientationChange() {
+    // Atualiza as dimensões do canvas quando o dispositivo é girado
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Centraliza ou ajusta o conteúdo, se necessário
+    submarine.x = Math.min(submarine.x, canvas.width - submarine.width);
+    submarine.y = Math.min(submarine.y, canvas.height - submarine.height);
+
+    // Impede o deslocamento indesejado no corpo da página
+    document.body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+}
+
+// Detecta mudanças na orientação
+window.addEventListener('orientationchange', () => {
+    setTimeout(adjustCanvasOnOrientationChange, 200); // Aguarda ajustes do navegador
+});
+
+// Chama no carregamento inicial e no redimensionamento
+window.addEventListener('resize', adjustCanvasOnOrientationChange);
+window.addEventListener('load', adjustCanvasOnOrientationChange); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
         // Evento de controle (teclado e toque)
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space') submarine.vy = submarine.jump; // Pulo
@@ -86,7 +181,7 @@ const obstacleImages = [
         canvas.addEventListener('click', () => {
             submarine.vy = submarine.jump; // Pulo no toque
         });
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ///obstaculos
     function createObstacle() {
             const img = obstacleImages[Math.floor(Math.random() * obstacleImages.length)];
@@ -100,7 +195,6 @@ const obstacleImages = [
                 img: img
             });
         }
-
     ///vidas
     function drawLives() {
             const img = new Image();
@@ -109,45 +203,42 @@ const obstacleImages = [
                 ctx.drawImage(img, 10 + i * 40, 10, 30, 30);
             }
         }
-
         function gameLoop() {
             if (isGameOver) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
     // Fundo
-const bgAspectRatio = bgImg.width / bgImg.height; // Proporção original da imagem
-const bgHeight = canvas.width / bgAspectRatio;   // Altura proporcional
-const bgY = (canvas.height - bgHeight) / 2;      // Centraliza verticalmente
-// Fundo
-bgX -= 2;
-            if (bgX <= -canvas.width) bgX = 0;
-            ctx.drawImage(bgImg, bgX, 0, canvas.width, canvas.height);
-            ctx.drawImage(bgImg, bgX + canvas.width, 0, canvas.width, canvas.height);
- // Submarino
- submarine.vy += submarine.gravity;
-            submarine.y += submarine.vy;
+        const bgAspectRatio = bgImg.width / bgImg.height; // Proporção original da imagem
+        const bgHeight = canvas.width / bgAspectRatio;   // Altura proporcional
+        const bgY = (canvas.height - bgHeight) / 2;      // Centraliza verticalmente
+    // Fundo
+        bgX -= 2;
+        if (bgX <= -canvas.width) bgX = 0;
+        ctx.drawImage(bgImg, bgX, 0, canvas.width, canvas.height);
+        ctx.drawImage(bgImg, bgX + canvas.width, 0, canvas.width, canvas.height);
+    // Submarino
+        submarine.vy += submarine.gravity;
+        submarine.y += submarine.vy;
             if (submarine.y + submarine.height > canvas.height) {
                 lives--;
                 submarine.y = canvas.height - submarine.height;
                 submarine.vy = 0;
             }
-            ctx.drawImage(submarineImg, submarine.x, submarine.y, submarine.width, submarine.height);
-
+        ctx.drawImage(submarineImg, submarine.x, submarine.y, submarine.width, submarine.height);
     // Obstáculos
     obstacles.forEach((obs, index) => {
-                obs.x -= 5;
-                if (obs.x + obs.width < 0) obstacles.splice(index, 1);
-                ctx.drawImage(obs.img, obs.x, obs.y, obs.width, obs.height);
-                if (
-                    submarine.x < obs.x + obs.width &&
-                    submarine.x + submarine.width > obs.x &&
-                    submarine.y < obs.y + obs.height &&
-                    submarine.y + submarine.height > obs.y
+        obs.x -= 5;
+            if (obs.x + obs.width < 0) obstacles.splice(index, 1);
+            ctx.drawImage(obs.img, obs.x, obs.y, obs.width, obs.height);
+            if (
+                submarine.x < obs.x + obs.width &&
+                submarine.x + submarine.width > obs.x &&
+                submarine.y < obs.y + obs.height &&
+                submarine.y + submarine.height > obs.y
                 ) {
                     lives--;
                     obstacles.splice(index, 1);
                 }
             });
-
             if (lives <= 0) {
                 isGameOver = true;
                 setTimeout(() => {
@@ -155,12 +246,10 @@ bgX -= 2;
                 }, 100);
                 return;
             }
-
             if (Math.random() < 0.02) createObstacle();
             drawLives();
             requestAnimationFrame(gameLoop);
         }
-
         submarineImg.onload = () => {
             gameLoop();
         };
