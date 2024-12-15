@@ -106,30 +106,12 @@ window.addEventListener('keydown', function(event) {
   if (['ArrowUp', 'ArrowDown', ' '].includes(event.key)) {
     event.preventDefault();
   }
-  // Previne a rolagem por gesto de toque
-document.addEventListener('touchmove', function(event) {
-  event.preventDefault();
-}, { passive: false });
-
 // Previne o zoom com gesto de pinça
 document.addEventListener('gesturestart', function(event) {
   event.preventDefault();
   event.stopPropagation();
 }, { passive: false });
 });
-// Bloqueia gestos de rolagem
-document.body.addEventListener(
-    'touchstart',
-    (e) => e.preventDefault(),
-    { passive: false }
-);
-
-document.body.addEventListener(
-    'touchmove',
-    (e) => e.preventDefault(),
-    { passive: false }
-);
-
 // Bloqueia rotação involuntária
 window.addEventListener('orientationchange', () => {
     checkOrientation();
